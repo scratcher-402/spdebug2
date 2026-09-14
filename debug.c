@@ -4,8 +4,10 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 FILE* log_file = NULL;
+const char* program_name = NULL;
 
 const char* level_tags[] = {
 	"DEBUG",
@@ -23,26 +25,34 @@ const char* console_level_tags[] = {
 	COLOR_FATAL "FATAL" COLOR_RESET
 };
 
-inline void _print_tag(LogLevel level) {
+
+void _print_tag(LogLevel level) {
 	time_t now = time(NULL);
-	char* str = ctime(&now);
+	struct tm *lt = localtime(&now);
+	char buf[64];
+	strftime(buf, sizeof(buf), "%d.%m.%Y %H:%M:%S", lt);
 
-	fprintf(stderr, "[%s %s] ", console_level_tags[level], str);
+	fprintf(stderr, "[%s %s] ", console_level_tags[level], buf);
 
-	if (log_file) fprintf(log_file, "[%s %s] ", level_tags[level], str);
+	if (log_file) fprintf(log_file, "[%s %s] ", level_tags[level], buf);
 	
 	return;
 }
 
-inline void _print_log_text(const char* format, va_list ap) {
-	vfprintf(stderr, format, ap);
+void _print_log_text(const char* format, va_list ap) {
+	va_list ap_copy;
+	va_copy(ap_copy, ap);
+	
+	vfprintf(stderr, format, ap_copy);
+
+	va_end(ap_copy);
 
 	if (log_file) vfprintf(log_file, format, ap);
 
 	return;
 }
 
-inline void _print_log_end() {
+void _print_log_end() {
 	fprintf(stderr, "\n");
 
 	if (log_file) {
@@ -66,18 +76,33 @@ void debug_log(LogLevel level, const char* format, ...) {
 	return;
 }
 
-void debug_start_program() {
+void debug_start_program(const char* name) {
+	program_name = name;
+	
 	if (!log_file) {
 		log_file = fopen("debug.log", "a");
 		if (!log_file) {
 			$err("Failed to open log file. Error: %s (errno %d)", strerror(errno), errno);
 		}
+		fputs("\n\n\n", log_file);
 	}
 
 	atexit(debug_exit);
+
+	if (name) {
+		$info("Program %s started.", name);
+	} else {
+		$info("Program started.");
+	}
 }
 
 void debug_exit() {
+	if (program_name) {
+		$info("Program %s finished.", program_name);
+	} else {
+		$info("Program finished.");
+	}
+	
 	if (log_file) {
 		fflush(log_file);
 		fclose(log_file);
