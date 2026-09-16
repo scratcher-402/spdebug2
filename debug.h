@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
 
 // Colors
 
@@ -31,6 +32,8 @@ typedef enum {
 	LOG_FATAL = 4
 } LogLevel;
 
+extern FILE* log_file;
+
 void debug_start_program(const char* name);
 
 void debug_log(LogLevel level, const char* format, ...);
@@ -39,7 +42,7 @@ void debug_exit();
 
 void debug_print_string(const char* string_name, const char* s);
 
-void debug_print_int_array(const char* arr_name, const int* arr, size_t length);
+void debug_print_int_array(const char* file_name, const char* func_name, int line, const char* arr_name, const int* arr, size_t length);
 
 
 #ifdef DEBUG
@@ -53,7 +56,7 @@ void debug_print_int_array(const char* arr_name, const int* arr, size_t length);
 	#define $fatal(fmt, ...) debug_log(LOG_FATAL, fmt, ##__VA_ARGS__)
 
 	#define $vs(str) debug_print_string(#str, (str))
-	#define $vd(arr, size) debug_print_int_array(#arr, (arr), size)
+	#define $vd(arr, size) debug_print_int_array(__FILE__, __func__, __LINE__, #arr, (arr), size)
 	
 	#define $d(n) $debug("[In %s, function %s, line %d] (int) %s = %d", __FILE__, __func__, __LINE__, #n, (n))
 
@@ -62,7 +65,7 @@ void debug_print_int_array(const char* arr_name, const int* arr, size_t length);
 #else
 
 	#define $init
-	#define $initp
+	#define $initp(name)
 	#define $debug(fmt, ...)
 	#define $info(fmt, ...)
 	#define $warn(fmt, ...)

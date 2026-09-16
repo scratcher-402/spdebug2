@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <unistd.h>
 
+// To do:
+// - debug_print_inline_string
+// - debug_print_<type>_array for uint, long, size_t
+
+
 #define MAX_STRING_LEN 2048
 
 typedef struct {
@@ -90,6 +95,8 @@ inline void _console_print_char(const char c) {
 }
 
 void debug_print_string(const char* string_name, const char* s) {
+	// To do:
+	// - Write string to log file
 	if (string_name == NULL) {
 		$warn("[debug_print_string] String name is null. Falling back to default (\"s\")");
 		string_name = "s";
@@ -120,7 +127,11 @@ void debug_print_string(const char* string_name, const char* s) {
 	for (uint row = 0; row < row_count; row++) {
 		// Print indexes
 		for (uint col = 0; col < elements_per_row; col++) {
-			fprintf(stderr, COLOR_INDEX "%5d" COLOR_RESET, row * elements_per_row + col);
+			uint index = row * elements_per_row + col;
+
+			if (index == length) break;
+			
+			fprintf(stderr, COLOR_INDEX "%5d" COLOR_RESET, index);
 		}
 		fprintf(stderr, "\n");
 		
@@ -138,18 +149,32 @@ void debug_print_string(const char* string_name, const char* s) {
 	$debug("[debug_print_string] End of string \"%s\"", string_name);
 }
 
-void debug_print_int_array(const char* arr_name, const int* arr, size_t length) {
+void debug_print_int_array(const char* file_name, const char* func_name, int line, const char* arr_name, const int* arr, size_t length) {
+	// To do:
+	// - fix printing empty arrays
+	// - print array to log file
+	// - don't use constant width, adjust it automatically
 	if (arr_name == NULL) {
 		$warn("[debug_print_int_array] Array name is null. Falling back to default name (\"arr\")");
 		arr_name = "arr";
 	}
 
+	$debug("[debug_print_int_array] (in %s, function %s, line %d) Array %s", file_name, func_name, line, arr_name);
+
+	// Handle empty array
+
+	if (length == 0) {
+		fprintf(stderr, COLOR_INDEX "	< empty array >" COLOR_RESET "\n");
+		if (log_file) fprintf(log_file, "	< empty array >\n");
+		return;
+	}
+
+	// Handle null array poiner
+
 	if (arr == NULL) {
 		$err("[debug_print_int_array] Pointer to array %s is null.", arr_name);
 		return;	
 	}
-
-	$debug("[debug_print_int_array] Start of array %s", arr_name);
 
 	// Print array to a terminal
 
@@ -162,7 +187,11 @@ void debug_print_int_array(const char* arr_name, const int* arr, size_t length) 
 	for (uint row = 0; row < row_count; row++) {
 		// Print indexes
 		for (uint col = 0; col < elements_per_row; col++) {
-			fprintf(stderr, COLOR_INDEX "%10d" COLOR_RESET, row * elements_per_row + col);
+			uint index = row * elements_per_row + col;
+
+			if (index == length) break;
+			
+			fprintf(stderr, COLOR_INDEX "%10u" COLOR_RESET, index);
 		}
 		fprintf(stderr, "\n");
 		
@@ -176,6 +205,16 @@ void debug_print_int_array(const char* arr_name, const int* arr, size_t length) 
 		}
 		fprintf(stderr, "\n");
 	}
-	
-	$debug("[debug_print_int_array] End of array %s", arr_name);
+
+	// Print array to a log file
+
+	if (log_file) {
+		for (uint index = 0; index < length; index++) fprintf(log_file, "%10u", index);
+		fprintf(log_file, "\n");
+
+		for (uint index = 0; index < length; index++) fprintf(log_file, "%10d", arr[index]);
+		fprintf(log_file, "\n");
+	}
+
+	return;
 }
