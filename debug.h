@@ -62,6 +62,8 @@ int debug_check_errno(const char* file_name, const char* func_name, int line);
 	#define $vd(arr, size) debug_print_int_array(__FILE__, __func__, __LINE__, #arr, (arr), size)
 	
 	#define $d(n) $debug("[In %s, function %s, line %d] (int) %s = %d", __FILE__, __func__, __LINE__, #n, (n))
+	#define $u(n) $debug("[In %s, function %s, line %d] (unsigned int) %s = %u", __FILE__, __func__, __LINE__, #n, (n))
+	#define $zu(n) $debug("[In %s, function %s, line %d] (size_t) %s = %zu", __FILE__, __func__, __LINE__, #n, (n))
 
 	#define $errno debug_check_errno(__FILE__, __func__, __LINE__)
 
@@ -79,6 +81,8 @@ int debug_check_errno(const char* file_name, const char* func_name, int line);
 	#define $vd(arr, size)
 
 	#define $d(n)
+	#define $u(n)
+	#define $zu(n)
 
 	#define $errno errno
 

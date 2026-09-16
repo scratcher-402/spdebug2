@@ -9,6 +9,7 @@
 // - debug_print_<type>_array for uint, long, size_t
 // - function _print_char for printing strings to log file, not console
 
+int debug_saved_errno = 0;
 
 #define MAX_STRING_LEN 2048
 
