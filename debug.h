@@ -33,6 +33,7 @@ typedef enum {
 } LogLevel;
 
 extern FILE* log_file;
+extern int debug_saved_errno;
 
 void debug_start_program(const char* name);
 
@@ -43,6 +44,8 @@ void debug_exit();
 void debug_print_string(const char* string_name, const char* s);
 
 void debug_print_int_array(const char* file_name, const char* func_name, int line, const char* arr_name, const int* arr, size_t length);
+
+int debug_check_errno(const char* file_name, const char* func_name, int line);
 
 
 #ifdef DEBUG
@@ -60,7 +63,7 @@ void debug_print_int_array(const char* file_name, const char* func_name, int lin
 	
 	#define $d(n) $debug("[In %s, function %s, line %d] (int) %s = %d", __FILE__, __func__, __LINE__, #n, (n))
 
-	#define $errno if (errno) { $err("Error in standard library: %s (Errno %d)", strerror(errno), errno); }
+	#define $errno debug_check_errno(__FILE__, __func__, __LINE__)
 
 #else
 
@@ -77,6 +80,6 @@ void debug_print_int_array(const char* file_name, const char* func_name, int lin
 
 	#define $d(n)
 
-	#define $errno
+	#define $errno errno
 
 #endif

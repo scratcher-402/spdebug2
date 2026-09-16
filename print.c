@@ -7,6 +7,7 @@
 // To do:
 // - debug_print_inline_string
 // - debug_print_<type>_array for uint, long, size_t
+// - function _print_char for printing strings to log file, not console
 
 
 #define MAX_STRING_LEN 2048
@@ -41,6 +42,8 @@ inline uint _ceil_div(uint a, uint b) {
 }
 
 inline void _console_print_char(const char c) {
+	// To do:
+	// - Support adjustable width
 	char buf[8] = {0};
 	if (c == 0) {
 		// Null-terminator
@@ -97,6 +100,8 @@ inline void _console_print_char(const char c) {
 void debug_print_string(const char* string_name, const char* s) {
 	// To do:
 	// - Write string to log file
+	// - Add file, function and line information
+	
 	if (string_name == NULL) {
 		$warn("[debug_print_string] String name is null. Falling back to default (\"s\")");
 		string_name = "s";
@@ -151,8 +156,6 @@ void debug_print_string(const char* string_name, const char* s) {
 
 void debug_print_int_array(const char* file_name, const char* func_name, int line, const char* arr_name, const int* arr, size_t length) {
 	// To do:
-	// - fix printing empty arrays
-	// - print array to log file
 	// - don't use constant width, adjust it automatically
 	if (arr_name == NULL) {
 		$warn("[debug_print_int_array] Array name is null. Falling back to default name (\"arr\")");
@@ -217,4 +220,12 @@ void debug_print_int_array(const char* file_name, const char* func_name, int lin
 	}
 
 	return;
+}
+
+int debug_check_errno(const char* file_name, const char* func_name, int line) {
+	debug_saved_errno = errno;
+	if (errno) {
+		$err("(in %s, function %s, line %d) Error in standard library: %s (Errno %d)", file_name, func_name, line, strerror(errno), errno);
+	}
+	return debug_saved_errno;
 }
