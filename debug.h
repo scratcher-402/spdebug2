@@ -45,7 +45,19 @@ typedef enum {
 	LOG_MODE_RAW_PREP = 2
 } LogMode;
 
+typedef struct {
+	const char* log_file_path;
+	const char* program_name;
+	LogLevel log_level;
+} DebugConfig_t;
+
 // Global vars
+
+DebugConfig_t debug_config = {
+	.log_file_path = "debug.log",
+	.log_level = LOG_DEBUG,
+	.program_name = NULL,
+};
 
 FILE* log_file;
 int debug_saved_errno;

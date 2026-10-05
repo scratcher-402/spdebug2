@@ -154,10 +154,6 @@ static inline void _print_char(FILE* file, const char c, uint width) {
 }
 
 void debug_print_string(const char* file_name, const char* func_name, int line, const char* string_name, const char* s) {
-	// To do:
-	// - Write string to log file
-	// - Add file, function and line information
-	
 	if (string_name == NULL) {
 		$warn("[debug_print_string] String name is null. Falling back to default (\"s\")");
 		string_name = "s";
