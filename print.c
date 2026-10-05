@@ -1,4 +1,7 @@
+#ifndef SPDEBUG_H
 #include "debug.h"
+#endif
+
 #include <sys/ioctl.h>
 #include <asm/termbits.h>
 #include <stdio.h>
@@ -7,21 +10,18 @@
 // To do:
 // - debug_print_inline_string
 // - debug_print_<type>_array for uint, long, size_t
-// - function _print_char for printing strings to log file, not console
 
 int debug_saved_errno = 0;
-
-#define MAX_STRING_LEN 2048
 
 typedef struct {
 	size_t y_size;
 	size_t x_size;
-} TerminalSize;
+} DebugTerminalSize;
 
 typedef unsigned int uint;
 
-TerminalSize debug_get_terminal_size() {
-	TerminalSize size = {24, 80};
+DebugTerminalSize debug_get_terminal_size() {
+	DebugTerminalSize size = {24, 80};
 	
 	struct winsize ws;
 	int result = ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
@@ -37,21 +37,21 @@ TerminalSize debug_get_terminal_size() {
 	return size;
 }
 
-inline uint _ceil_div(uint a, uint b) {
+static inline uint _debug_ceil_div(uint a, uint b) {
 	if (a % b == 0) return a/b;
 	else return a/b + 1;
 }
 
-inline void _console_print_char(const char c) {
-	// To do:
-	// - Support adjustable width
+static inline void _console_print_char(const char c, uint width) {
+	assert(width >= 4);
+
 	char buf[8] = {0};
 	if (c == 0) {
 		// Null-terminator
 		buf[0] = '\\';
 		buf[1] = '0';
 		
-		fprintf(stderr, COLOR_SYM_NULL "%5s" COLOR_RESET, &buf);
+		fprintf(stderr, COLOR_SYM_NULL "%*s" COLOR_RESET, width, (char*)&buf);
 	} else if (c >= 7 && c <= 13) {
 		// Named sequences
 		buf[0] = '\\';
@@ -80,25 +80,80 @@ inline void _console_print_char(const char c) {
 				break;
 		}
 
-		fprintf(stderr, COLOR_SYM_NAMED "%5s" COLOR_RESET, &buf);
+		fprintf(stderr, COLOR_SYM_NAMED "%*s" COLOR_RESET, width, (char*)&buf);
 	} else if (c == ' ') {
 		// Space
 		buf[0] = '\'';
 		buf[1] = ' ';
 		buf[2] = '\'';
 		
-		fprintf(stderr, COLOR_SYM_SPACE "%5s" COLOR_RESET, &buf);
+		fprintf(stderr, COLOR_SYM_SPACE "%*s" COLOR_RESET, width, (char*)&buf);
 	} else if (c > 32 && c < 127) {
 		// Printable chars
 		buf[0] = c;
 		
-		fprintf(stderr, COLOR_SYM_NORMAL "%5s" COLOR_RESET, &buf);
+		fprintf(stderr, COLOR_SYM_NORMAL "%*s" COLOR_RESET, width, (char*)&buf);
 	} else {
-		fprintf(stderr, COLOR_SYM_UNNAMED " \\x%02hhx" COLOR_RESET, c);
+		fprintf(stderr, COLOR_SYM_UNNAMED "%*s\\x%02hhx" COLOR_RESET, width - 4, "", c);
 	}
 }
 
-void debug_print_string(const char* string_name, const char* s) {
+static inline void _print_char(FILE* file, const char c, uint width) {
+	char buf[8] = {0};
+	if (c == 0) {
+		// Null-terminator
+		buf[0] = '\\';
+		buf[1] = '0';
+		
+		fprintf(file, "%*s", width, (char*)&buf);
+	} else if (c >= 7 && c <= 13) {
+		// Named sequences
+		buf[0] = '\\';
+		
+		switch (c) {
+			case 7:
+				buf[1] = 'a';
+				break;
+			case 8:
+				buf[1] = 'b';
+				break;
+			case 9:
+				buf[1] = 't';
+				break;
+			case 10:
+				buf[1] = 'n';
+				break;
+			case 11:
+				buf[1] = 'v';
+				break;
+			case 12:
+				buf[1] = 'f';
+				break;
+			case 13:
+				buf[1] = 'r';
+				break;
+		}
+
+		fprintf(file, "%*s", width, (char*)&buf);
+	} else if (c == ' ') {
+		// Space
+		buf[0] = '\'';
+		buf[1] = ' ';
+		buf[2] = '\'';
+		
+		fprintf(file, "%*s", width, (char*)&buf);
+	} else if (c > 32 && c < 127) {
+		// Printable chars
+		buf[0] = c;
+		
+		fprintf(file, "%*s", width, (char*)&buf);
+	} else {
+		if (width >= 4) fprintf(file, "%*s\\x%02hhx", width - 4, "", c);
+		else fprintf(file, "\\x%02hhx", c);
+	}
+}
+
+void debug_print_string(const char* file_name, const char* func_name, int line, const char* string_name, const char* s) {
 	// To do:
 	// - Write string to log file
 	// - Add file, function and line information
@@ -113,22 +168,22 @@ void debug_print_string(const char* string_name, const char* s) {
 		return;
 	}
 
-	size_t length = strnlen(s, MAX_STRING_LEN);
-	if (length == MAX_STRING_LEN) {
-		$err("[debug_print_string] String %s is longer than max printing size (%zu). String may be corrupted.", string_name, MAX_STRING_LEN);
+	size_t length = strnlen(s, SPDEBUG_MAX_STRING_LEN);
+	if (length == SPDEBUG_MAX_STRING_LEN) {
+		$err("[debug_print_string] String %s is longer than max printing size (%zu). String may be corrupted.", string_name, SPDEBUG_MAX_STRING_LEN);
 		return;
 	}
 	length++; // to print the null-terminator
 
-	$debug("[debug_print_string] Start of string \"%s\"", string_name);
+	$debug("[debug_print_string] (in %s, function %s, line %d) String \"%s\", length %zu", file_name, func_name, line, string_name, length);
 	
 	// Print string to a terminal
 
-	TerminalSize ts = debug_get_terminal_size();
+	DebugTerminalSize ts = debug_get_terminal_size();
 	ts.x_size -= 1;
 
 	uint elements_per_row = ts.x_size / 5;
-	uint row_count = _ceil_div(length, elements_per_row);
+	uint row_count = _debug_ceil_div(length, elements_per_row);
 
 	for (uint row = 0; row < row_count; row++) {
 		// Print indexes
@@ -137,7 +192,7 @@ void debug_print_string(const char* string_name, const char* s) {
 
 			if (index == length) break;
 			
-			fprintf(stderr, COLOR_INDEX "%5d" COLOR_RESET, index);
+			fprintf(stderr, COLOR_INDEX "%5u" COLOR_RESET, index);
 		}
 		fprintf(stderr, "\n");
 		
@@ -147,23 +202,35 @@ void debug_print_string(const char* string_name, const char* s) {
 
 			if (index == length) break;
 
-			_console_print_char(s[index]);
+			_console_print_char(s[index], 5);
 		}
 		fprintf(stderr, "\n");
 	}
 
-	$debug("[debug_print_string] End of string \"%s\"", string_name);
+	// Print it to a log file
+
+	if (log_file) {
+		// Print indexes
+		for (uint index = 0; index < length; index++) fprintf(log_file, "%5u", index);
+		fprintf(log_file, "\n");
+
+		// Print values
+		for (uint index = 0; index < length; index++) _print_char(log_file, s[index], 5);
+		fprintf(log_file, "\n");
+
+		fflush(log_file);
+	}
+
+	return;
 }
 
 void debug_print_int_array(const char* file_name, const char* func_name, int line, const char* arr_name, const int* arr, size_t length) {
-	// To do:
-	// - don't use constant width, adjust it automatically
 	if (arr_name == NULL) {
 		$warn("[debug_print_int_array] Array name is null. Falling back to default name (\"arr\")");
 		arr_name = "arr";
 	}
 
-	$debug("[debug_print_int_array] (in %s, function %s, line %d) Array %s", file_name, func_name, line, arr_name);
+	$debug("[debug_print_int_array] (in %s, function %s, line %d) Array %s, length %zu", file_name, func_name, line, arr_name, length);
 
 	// Handle empty array
 
@@ -182,11 +249,11 @@ void debug_print_int_array(const char* file_name, const char* func_name, int lin
 
 	// Print array to a terminal
 
-	TerminalSize ts = debug_get_terminal_size();
+	DebugTerminalSize ts = debug_get_terminal_size();
 	ts.x_size -= 1;
 
 	uint elements_per_row = ts.x_size / 10;
-	uint row_count = _ceil_div(length, elements_per_row);
+	uint row_count = _debug_ceil_div(length, elements_per_row);
 
 	for (uint row = 0; row < row_count; row++) {
 		// Print indexes
@@ -218,15 +285,21 @@ void debug_print_int_array(const char* file_name, const char* func_name, int lin
 
 		for (uint index = 0; index < length; index++) fprintf(log_file, "%10d", arr[index]);
 		fprintf(log_file, "\n");
+
+		fflush(log_file);
 	}
 
 	return;
 }
 
-int debug_check_errno(const char* file_name, const char* func_name, int line) {
+int debug_check_errno(const char* file_name, const char* func_name, int line, const char* print_reason) {
 	debug_saved_errno = errno;
 	if (errno) {
-		$err("(in %s, function %s, line %d) Error in standard library: %s (Errno %d)", file_name, func_name, line, strerror(errno), errno);
+		if (print_reason) {
+			$err("(in %s, function %s, line %d) %s: %s (Errno %d)", file_name, func_name, line, print_reason, strerror(errno), errno);
+		} else {
+			$err("(in %s, function %s, line %d) Error in standard library: %s (Errno %d)", file_name, func_name, line, strerror(errno), errno);
+		}
 	}
 	return debug_saved_errno;
 }

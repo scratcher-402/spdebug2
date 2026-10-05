@@ -1,4 +1,7 @@
+#ifndef SPDEBUG_H
 #include "debug.h"
+#endif
+
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
@@ -25,8 +28,34 @@ const char* console_level_tags[] = {
 	COLOR_FATAL "FATAL" COLOR_RESET
 };
 
+char* debug_clean_string(const char* str) {
+	// Removes ANSI color codes from string. Returns new string allocated in dynamic memory.
+	char* clean_str = strdup(str);
 
-void _print_tag(LogLevel level) {
+	size_t str_pos = 0, clean_str_pos = 0;
+	while (str[str_pos] != '\0') {
+		if (str[str_pos] == '\x1b') {
+			do {
+				str_pos++;
+			} while (str[str_pos] != '\0' && str[str_pos] != 'm');
+			
+			if (str[str_pos] == '\0') break;
+
+			str_pos++;
+		}
+		
+		clean_str[clean_str_pos] = str[str_pos];
+		clean_str_pos++;
+		str_pos++;
+	}
+
+	assert(clean_str_pos <= str_pos);
+	clean_str[clean_str_pos] = '\0';
+
+	return clean_str;
+}
+
+static void _print_tag(LogLevel level) {
 	time_t now = time(NULL);
 	struct tm *lt = localtime(&now);
 	char buf[64];
@@ -39,7 +68,7 @@ void _print_tag(LogLevel level) {
 	return;
 }
 
-void _print_log_text(const char* format, va_list ap) {
+static void _print_log_text(const char* format, va_list ap) {
 	va_list ap_copy;
 	va_copy(ap_copy, ap);
 	
@@ -47,12 +76,16 @@ void _print_log_text(const char* format, va_list ap) {
 
 	va_end(ap_copy);
 
-	if (log_file) vfprintf(log_file, format, ap);
+	if (log_file) {
+		char* clean_format = debug_clean_string(format);
+		vfprintf(log_file, clean_format, ap);
+		free(clean_format);
+	}
 
 	return;
 }
 
-void _print_log_end() {
+static void _print_log_end() {
 	fprintf(stderr, "\n");
 
 	if (log_file) {
@@ -104,7 +137,6 @@ void debug_exit() {
 	}
 	
 	if (log_file) {
-		fflush(log_file);
 		fclose(log_file);
 	}
 }
