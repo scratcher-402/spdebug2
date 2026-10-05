@@ -19,7 +19,9 @@
 #define COLOR_INDEX "\x1b[36m"
 #define COLOR_VALUE ""
 
-#define COLOR_LIB_NAME "\x1b[1;36m"
+#define COLOR_FILE_NAME "\x1b[1;36m"
+#define COLOR_FUNC_NAME "\x1b[1;34m"
+#define COLOR_LINE_NUMBER "\x1b[1;33m"
 
 #define COLOR_SYM_NORMAL ""
 #define COLOR_SYM_NULL "\x1b[1;35m"
@@ -58,38 +60,29 @@ void debug_print_int_array(const char* file_name, const char* func_name, int lin
 
 int debug_check_errno(const char* file_name, const char* func_name, int line, const char* print_reason);
 
-void debug_hex_dump_object(uint8_t* object, size_t object_size);
+void debug_hex_dump_object(uint8_t* object, size_t object_size, const char* object_name);
 
 #ifndef SPNDEBUG
 
 	#define $init debug_start_program(NULL)
 	#define $initp(name) debug_start_program((name))
-
-	#ifdef SPDEBUG_LOG_LIB_NAME
-		#define SPDEBUG_LIB_NAME_C COLOR_LIB_NAME "[" SPDEBUG_LOG_LIB_NAME "]" COLOR_RESET " "
-		
-		#define $debug(fmt, ...) debug_log(LOG_DEBUG, SPDEBUG_LIB_NAME_C fmt, ##__VA_ARGS__)
-		#define $info(fmt, ...) debug_log(LOG_INFO, SPDEBUG_LIB_NAME_C fmt, ##__VA_ARGS__)
-		#define $warn(fmt, ...) debug_log(LOG_WARNING, SPDEBUG_LIB_NAME_C fmt, ##__VA_ARGS__)
-		#define $err(fmt, ...) debug_log(LOG_ERROR, SPDEBUG_LIB_NAME_C fmt, ##__VA_ARGS__)
-		#define $fatal(fmt, ...) debug_log(LOG_FATAL, SPDEBUG_LIB_NAME_C fmt, ##__VA_ARGS__)
-	#else
-		#define $debug(fmt, ...) debug_log(LOG_DEBUG, fmt, ##__VA_ARGS__)
-		#define $info(fmt, ...) debug_log(LOG_INFO, fmt, ##__VA_ARGS__)
-		#define $warn(fmt, ...) debug_log(LOG_WARNING, fmt, ##__VA_ARGS__)
-		#define $err(fmt, ...) debug_log(LOG_ERROR, fmt, ##__VA_ARGS__)
-		#define $fatal(fmt, ...) debug_log(LOG_FATAL, fmt, ##__VA_ARGS__)
-	#endif
+	
+	#define $debug(fmt, ...) debug_log(LOG_DEBUG, fmt, ##__VA_ARGS__)
+	#define $info(fmt, ...) debug_log(LOG_INFO, fmt, ##__VA_ARGS__)
+	#define $warn(fmt, ...) debug_log(LOG_WARNING, fmt, ##__VA_ARGS__)
+	#define $err(fmt, ...) debug_log(LOG_ERROR, fmt, ##__VA_ARGS__)
+	#define $fatal(fmt, ...) debug_log(LOG_FATAL, fmt, ##__VA_ARGS__)
 
 	#define $vs(str) debug_print_string(__FILE__, __func__, __LINE__, #str, (str))
 	#define $vd(arr, size) debug_print_int_array(__FILE__, __func__, __LINE__, #arr, (arr), size)
-	
-	#define $d(n) $debug("(In %s, function %s, line %d) (int) %s = %d", __FILE__, __func__, __LINE__, #n, (n))
-	#define $u(n) $debug("(In %s, function %s, line %d) (unsigned int) %s = %u", __FILE__, __func__, __LINE__, #n, (n))
-	#define $zu(n) $debug("(In %s, function %s, line %d) (size_t) %s = %zu", __FILE__, __func__, __LINE__, #n, (n))
 
-	#define $xdi(item) debug_hex_dump_object((uint8_t*)&(item), sizeof(item));
-	#define $xdv(arr, size) debug_hex_dump_object((uint8_t*)(arr), (size));
+	#define DEBUG_LOCATOR_PREFIX "(In " COLOR_FILE_NAME "%s" COLOR_RESET ", function " COLOR_FUNC_NAME "%s" COLOR_RESET ", line " COLOR_LINE_NUMBER "%d" COLOR_RESET ") "
+	#define $d(n) $debug(DEBUG_LOCATOR_PREFIX "(int) %s = %d", __FILE__, __func__, __LINE__, #n, (n))
+	#define $u(n) $debug(DEBUG_LOCATOR_PREFIX "(unsigned int) %s = %u", __FILE__, __func__, __LINE__, #n, (n))
+	#define $zu(n) $debug(DEBUG_LOCATOR_PREFIX "(size_t) %s = %zu", __FILE__, __func__, __LINE__, #n, (n))
+
+	#define $xdi(item) debug_hex_dump_object((uint8_t*)&(item), sizeof(item), #item);
+	#define $xdv(arr, size) debug_hex_dump_object((uint8_t*)(arr), (size), #arr);
 
 	#define $errno debug_check_errno(__FILE__, __func__, __LINE__, NULL)
 	#define $cerrno(comment) debug_check_errno(__FILE__, __func__, __LINE__, comment)
@@ -113,6 +106,9 @@ void debug_hex_dump_object(uint8_t* object, size_t object_size);
 	#define $d(n)
 	#define $u(n)
 	#define $zu(n)
+
+	#define $xdi(item);
+	#define $xdv(arr, size);
 
 	#define $errno errno
 	#define $cerrno(reason) errno
