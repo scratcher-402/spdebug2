@@ -39,10 +39,17 @@ typedef enum {
 	LOG_FATAL = 4
 } LogLevel;
 
+typedef enum {
+	LOG_MODE_AUTO = 0,
+	LOG_MODE_RAW = 1,
+	LOG_MODE_RAW_PREP = 2
+} LogMode;
+
 // Global vars
 
 FILE* log_file;
 int debug_saved_errno;
+LogMode debug_log_mode = LOG_MODE_AUTO;
 
 #define SPDEBUG_MAX_STRING_LEN 2048
 
@@ -62,6 +69,10 @@ int debug_check_errno(const char* file_name, const char* func_name, int line, co
 
 void debug_hex_dump_object(uint8_t* object, size_t object_size, const char* object_name);
 
+void debug_start_raw();
+
+void debug_end_raw();
+
 #ifndef SPNDEBUG
 
 	#define $init debug_start_program(NULL)
@@ -72,6 +83,9 @@ void debug_hex_dump_object(uint8_t* object, size_t object_size, const char* obje
 	#define $warn(fmt, ...) debug_log(LOG_WARNING, fmt, ##__VA_ARGS__)
 	#define $err(fmt, ...) debug_log(LOG_ERROR, fmt, ##__VA_ARGS__)
 	#define $fatal(fmt, ...) debug_log(LOG_FATAL, fmt, ##__VA_ARGS__)
+
+	#define $raw debug_start_raw()
+	#define $endraw debug_end_raw()
 
 	#define $vs(str) debug_print_string(__FILE__, __func__, __LINE__, #str, (str))
 	#define $vd(arr, size) debug_print_int_array(__FILE__, __func__, __LINE__, #arr, (arr), size)
@@ -94,11 +108,15 @@ void debug_hex_dump_object(uint8_t* object, size_t object_size, const char* obje
 
 	#define $init
 	#define $initp(name)
+	
 	#define $debug(fmt, ...)
 	#define $info(fmt, ...)
 	#define $warn(fmt, ...)
 	#define $err(fmt, ...)
 	#define $fatal(fmt, ...)
+
+	#define $raw
+	#define $endraw
 
 	#define $vs(str)
 	#define $vd(arr, size)

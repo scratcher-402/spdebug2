@@ -55,7 +55,7 @@ char* debug_clean_string(const char* str) {
 	return clean_str;
 }
 
-static void _print_tag(LogLevel level) {
+static inline void _print_tag(LogLevel level) {
 	time_t now = time(NULL);
 	struct tm *lt = localtime(&now);
 	char buf[64];
@@ -68,7 +68,7 @@ static void _print_tag(LogLevel level) {
 	return;
 }
 
-static void _print_log_text(const char* format, va_list ap) {
+static inline void _print_log_text(const char* format, va_list ap) {
 	va_list ap_copy;
 	va_copy(ap_copy, ap);
 	
@@ -85,7 +85,7 @@ static void _print_log_text(const char* format, va_list ap) {
 	return;
 }
 
-static void _print_log_end() {
+static inline void _print_log_end() {
 	fprintf(stderr, "\n");
 
 	if (log_file) {
@@ -101,12 +101,27 @@ void debug_log(LogLevel level, const char* format, ...) {
 	va_list ap;
 	va_start(ap, format);
 
-	_print_tag(level);
+	if (debug_log_mode == LOG_MODE_AUTO) _print_tag(level);
+	if (debug_log_mode == LOG_MODE_RAW_PREP) {
+		_print_tag(level);
+		debug_log_mode = LOG_MODE_RAW;
+	}
+	
 	_print_log_text(format, ap);
-	_print_log_end();
+	
+	if (debug_log_mode == LOG_MODE_AUTO) _print_log_end();
 
 	va_end(ap);
 	return;
+}
+
+void debug_start_raw() {
+	debug_log_mode = LOG_MODE_RAW_PREP;
+}
+
+void debug_end_raw() {
+	_print_log_end();
+	debug_log_mode = LOG_MODE_AUTO;
 }
 
 void debug_start_program(const char* name) {
