@@ -1,4 +1,5 @@
-#include "debug.h"
+#define SPDEBUG_IMPLEMENTATION
+#include "spdebug.h"
 
 int main() {
 	$init;

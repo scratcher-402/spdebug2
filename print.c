@@ -221,6 +221,7 @@ void debug_print_string(const char* file_name, const char* func_name, int line, 
 }
 
 void debug_print_int_array(const char* file_name, const char* func_name, int line, const char* arr_name, const int* arr, size_t length) {
+	// Function is deprecated
 	if (arr_name == NULL) {
 		$warn("[debug_print_int_array] Array name is null. Falling back to default name (\"arr\")");
 		arr_name = "arr";
@@ -298,4 +299,76 @@ int debug_check_errno(const char* file_name, const char* func_name, int line, co
 		}
 	}
 	return debug_saved_errno;
+}
+
+void debug_print_number_array(void* arr, const char* arr_name, size_t arr_size, size_t arr_elem_size, void(*print_func)(const void*, int), const char* file_name, const char* func_name, int line_number) {
+	// TODO: Automatic element width
+	assert(arr_name != NULL);
+	assert(file_name != NULL);
+	assert(func_name != NULL);
+	assert(print_func != NULL);
+
+	$raw;
+	
+	$debug("[debug_print_number_array] (in %s, function %s, line %d) Array %s, length %zu\n", file_name, func_name, line_number, arr_name, arr_size);
+
+	// Handle empty array
+	if (arr_size == 0) {
+		$debug(COLOR_INDEX "< empty array >" COLOR_RESET "\n");
+	}
+
+	// Handle null array pointer
+	if (arr == NULL) {
+		$debug(COLOR_ERROR "< array pointer is null >" COLOR_RESET "\n");
+	}
+
+	// Print array
+	
+	DebugTerminalSize ts = debug_get_terminal_size();
+	ts.x_size -= 1;
+
+	uint elements_per_row = ts.x_size / 10;
+	uint row_count = _debug_ceil_div(arr_size, elements_per_row);
+
+	for (uint row = 0; row < row_count; row++) {
+		// Print indexes
+		for (uint col = 0; col < elements_per_row; col++) {
+			uint index = row * elements_per_row + col;
+
+			if (index == arr_size) break;
+			
+			$debug(COLOR_INDEX "%10u" COLOR_RESET, index);
+		}
+		$debug("\n");
+		
+		// Print values
+		for (uint col = 0; col < elements_per_row; col++) {
+			uint index = row * elements_per_row + col;
+
+			if (index == arr_size) break;
+
+			print_func(arr + index * arr_elem_size, 10);
+		}
+		fprintf(stderr, "\n");
+	}
+
+	$endraw;
+
+	return;
+}
+
+void debug_print_int(const void* number, int width) {
+	$debug("%*d", width, *(int*)number);
+}
+
+void debug_print_uint(const void* number, int width) {
+	$debug("%*u", width, *(uint*)number);
+}
+
+void debug_print_sizet(const void* number, int width) {
+	$debug("%*zu", width, *(size_t*)number);
+}
+
+void debug_print_char(const void* number, int width) {
+	$debug("%*hhd", width, *(char*)number);
 }

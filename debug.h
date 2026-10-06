@@ -77,6 +77,13 @@ void debug_print_string(const char* file_name, const char* func_name, int line, 
 
 void debug_print_int_array(const char* file_name, const char* func_name, int line, const char* arr_name, const int* arr, size_t length);
 
+void debug_print_number_array(void* arr, const char* arr_name, size_t arr_size, size_t arr_elem_size, void(*print_func)(const void*, int), const char* file_name, const char* func_name, int line_number);
+
+void debug_print_int(const void* number, int width);
+void debug_print_uint(const void* number, int width);
+void debug_print_sizet(const void* number, int width);
+void debug_print_char(const void* number, int width);
+
 int debug_check_errno(const char* file_name, const char* func_name, int line, const char* print_reason);
 
 void debug_hex_dump_object(uint8_t* object, size_t object_size, const char* object_name);
@@ -100,7 +107,10 @@ void debug_end_raw();
 	#define $endraw debug_end_raw()
 
 	#define $vs(str) debug_print_string(__FILE__, __func__, __LINE__, #str, (str))
-	#define $vd(arr, size) debug_print_int_array(__FILE__, __func__, __LINE__, #arr, (arr), size)
+	#define $vd(arr, size) debug_print_number_array((arr), #arr, size, sizeof(int), debug_print_int, __FILE__, __func__, __LINE__)
+	#define $vu(arr, size) debug_print_number_array((arr), #arr, size, sizeof(unsigned int), debug_print_uint, __FILE__, __func__, __LINE__)
+	#define $vzu(arr, size) debug_print_number_array((arr), #arr, size, sizeof(size_t), debug_print_sizet, __FILE__, __func__, __LINE__)
+	#define $vhhd(arr, size) debug_print_number_array((arr), #arr, size, sizeof(char), debug_print_char, __FILE__, __func__, __LINE__)
 
 	#define DEBUG_LOCATOR_PREFIX "(In " COLOR_FILE_NAME "%s" COLOR_RESET ", function " COLOR_FUNC_NAME "%s" COLOR_RESET ", line " COLOR_LINE_NUMBER "%d" COLOR_RESET ") "
 	#define $d(n) $debug(DEBUG_LOCATOR_PREFIX "(int) %s = %d", __FILE__, __func__, __LINE__, #n, (n))
@@ -132,6 +142,9 @@ void debug_end_raw();
 
 	#define $vs(str)
 	#define $vd(arr, size)
+	#define $vu(arr, size)
+	#define $vzu(arr, size)
+	#define $vhhd(arr, size)
 
 	#define $d(n)
 	#define $u(n)
