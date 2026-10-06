@@ -349,7 +349,7 @@ void debug_print_number_array(void* arr, const char* arr_name, size_t arr_size, 
 
 			print_func(arr + index * arr_elem_size, 10);
 		}
-		fprintf(stderr, "\n");
+		$debug("\n");
 	}
 
 	$endraw;
