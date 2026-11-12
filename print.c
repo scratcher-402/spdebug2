@@ -347,7 +347,7 @@ void debug_print_number_array(void* arr, const char* arr_name, size_t arr_size, 
 
 			if (index == arr_size) break;
 
-			print_func(arr + index * arr_elem_size, 10);
+			print_func((uint8_t*)arr + index * arr_elem_size, 10);
 		}
 		$debug("\n");
 	}

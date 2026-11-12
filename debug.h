@@ -53,15 +53,11 @@ typedef struct {
 
 // Global vars
 
-DebugConfig_t debug_config = {
-	.log_file_path = "debug.log",
-	.log_level = LOG_DEBUG,
-	.program_name = NULL,
-};
+extern DebugConfig_t debug_config;
 
-FILE* log_file;
-int debug_saved_errno;
-LogMode debug_log_mode = LOG_MODE_AUTO;
+extern FILE* log_file;
+extern int debug_saved_errno;
+extern LogMode debug_log_mode;
 
 #define SPDEBUG_MAX_STRING_LEN 2048
 

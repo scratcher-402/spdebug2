@@ -5,11 +5,18 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
 FILE* log_file = NULL;
+
+DebugConfig_t debug_config = {
+	.log_file_path = "debug.log",
+	.program_name = NULL,
+	.log_level = LOG_DEBUG,
+};
+
+LogMode debug_log_mode = LOG_MODE_AUTO;
 
 const char* level_tags[] = {
 	"DEBUG",
@@ -32,7 +39,7 @@ char* debug_clean_string(const char* str) {
 	char* clean_str = strdup(str);
 
 	size_t str_pos = 0, clean_str_pos = 0;
-	while (str[str_pos] != '\0') {
+	while (str[str_pos] != '\0' && clean_str[clean_str_pos] != '\0') {
 		if (str[str_pos] == '\x1b') {
 			do {
 				str_pos++;
@@ -46,7 +53,7 @@ char* debug_clean_string(const char* str) {
 		
 		clean_str[clean_str_pos] = str[str_pos];
 		clean_str_pos++;
-		str_pos++;
+		if (str[str_pos] != '\0') str_pos++;
 	}
 
 	assert(clean_str_pos <= str_pos);
